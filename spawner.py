@@ -23,7 +23,7 @@ class Spawner:
         # Si se cumple el intervalo definido por el modelo
         if current_time - self.last_spawn_time >= self.iat_model[self.current_index]:
             # Escoger aleatoriamente un tipo de enemigo
-            enemy_type = random.choice(["pripyat"])
+            enemy_type = random.choice(["asteroid", "glowworm", "kamikaze", "pripyat"])
             if enemy_type == "glowworm":
                 x = random.randint(0, 4096)
                 y = random.randint(0, 4096)
