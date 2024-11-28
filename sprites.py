@@ -3,6 +3,8 @@ import pygame
 from pygame.math import Vector2
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT
 import random
+from test_nums.random_all_test import RandomTests
+from generator_nums.linear_congruence import LinearCongruence
 
 
 # Clase para los disparos de láser
@@ -28,9 +30,9 @@ class Laser(pygame.sprite.Sprite):
 
         # Si el láser sale de la pantalla, eliminarlo
         if (self.rect.right < 0 or self.rect.left > MAP_WIDTH or
-            self.rect.bottom < 0 or self.rect.top > MAP_HEIGHT):
+                self.rect.bottom < 0 or self.rect.top > MAP_HEIGHT):
             self.kill()
-        
+
 
 # Clase para la nave del jugador
 class PlayerShip(pygame.sprite.Sprite):
@@ -55,7 +57,8 @@ class PlayerShip(pygame.sprite.Sprite):
         self.mode_duration = 0  # Duración temporal del modo especial
         self.health = 100  # Vida inicial del jugador (1-100)
         if self.shoot_mode == "doble":
-            self.original_image = pygame.image.load('assets/images/ship_2.png').convert_alpha()
+            self.original_image = pygame.image.load(
+                'assets/images/ship_2.png').convert_alpha()
 
     def update(self, keys, laser_group):
         # Rotar la nave
@@ -63,10 +66,10 @@ class PlayerShip(pygame.sprite.Sprite):
             self.angle += self.rotation_speed  # Gira a la derecha
         if keys[pygame.K_LEFT]:
             self.angle -= self.rotation_speed  # Gira a la izquierda
-        
+
         # Aplicar la rotación a la dirección de movimiento
         self.direction = Vector2(0, -1).rotate(self.angle)
-        
+
         # Mover la nave hacia adelante
         if keys[pygame.K_UP]:
             self.velocity = self.direction * self.speed
@@ -80,7 +83,8 @@ class PlayerShip(pygame.sprite.Sprite):
         self.rect.center = self.position
 
         # Actualizar la rotación de la imagen
-        self.image = pygame.transform.rotate(self.original_image, -self.angle)  # Rotación inversa para la imagen
+        self.image = pygame.transform.rotate(
+            self.original_image, -self.angle)  # Rotación inversa para la imagen
         self.rect = self.image.get_rect(center=self.rect.center)
 
         # Efecto wraparound: reaparecer en el lado opuesto
@@ -99,7 +103,8 @@ class PlayerShip(pygame.sprite.Sprite):
         # Disparar láser con tecla ESPACIO
         if keys[pygame.K_SPACE]:
             current_time = pygame.time.get_ticks()
-            fire_rate = 500  # Intervalo entre disparos para modo normal (0.5 segundos)
+            # Intervalo entre disparos para modo normal (0.5 segundos)
+            fire_rate = 500
 
             if self.shoot_mode == "rápido":
                 fire_rate = 200  # Disparos rápidos (0.2 segundos)
@@ -110,13 +115,17 @@ class PlayerShip(pygame.sprite.Sprite):
     def shoot(self, laser_group):
         if self.shoot_mode == "doble":
             # Crear dos láseres: uno a la izquierda y otro a la derecha
-            offset = Vector2(25, 0).rotate(-self.angle)  # Distancia entre los disparos
-            laser_left = Laser(self.rect.center - offset, self.direction, pygame.transform.rotate(self.original_laser_image, -self.angle))
-            laser_right = Laser(self.rect.center + offset, self.direction, pygame.transform.rotate(self.original_laser_image, -self.angle))
+            # Distancia entre los disparos
+            offset = Vector2(25, 0).rotate(-self.angle)
+            laser_left = Laser(self.rect.center - offset, self.direction,
+                               pygame.transform.rotate(self.original_laser_image, -self.angle))
+            laser_right = Laser(self.rect.center + offset, self.direction,
+                                pygame.transform.rotate(self.original_laser_image, -self.angle))
             laser_group.add(laser_left, laser_right)
         else:
             # Modo normal o rápido: un solo láser
-            laser = Laser(self.rect.center, self.direction, pygame.transform.rotate(self.original_laser_image, -self.angle))
+            laser = Laser(self.rect.center, self.direction, pygame.transform.rotate(
+                self.original_laser_image, -self.angle))
             laser_group.add(laser)
 
         self.shoot_sound.play()  # Reproducir el sonido del disparo
@@ -124,7 +133,8 @@ class PlayerShip(pygame.sprite.Sprite):
     def draw(self, screen, camera_x, camera_y):
         # Dibujar el thruster (propulsión) si la nave está avanzando
         if self.moving_forward:
-            thruster = pygame.transform.rotate(self.thruster_image, -self.angle)  # Rotar propulsión según ángulo
+            thruster = pygame.transform.rotate(
+                self.thruster_image, -self.angle)  # Rotar propulsión según ángulo
             thruster_rect = thruster.get_rect(center=self.rect.center)
             thruster_offset = self.direction * -35  # Distancia detrás de la nave
             thruster_rect.center += thruster_offset
@@ -136,7 +146,7 @@ class PlayerShip(pygame.sprite.Sprite):
         # Ajustar la posición de la nave a la cámara
         adjusted_rect = self.rect.move(-camera_x, -camera_y)
         screen.blit(self.image, adjusted_rect)
-        
+
     def draw_health_bar(self, screen):
         # Posición y tamaño de la barra de vida
         bar_width = SCREEN_WIDTH
@@ -157,133 +167,117 @@ class PlayerShip(pygame.sprite.Sprite):
             bar_color = (255, 0, 0)  # Rojo
 
         # Dibujar la barra de vida
-        pygame.draw.rect(screen, bar_color, (bar_x, bar_y, current_bar_width, bar_height))
-        pygame.draw.rect(screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)  # Borde blanco
+        pygame.draw.rect(screen, bar_color, (bar_x, bar_y,
+                         current_bar_width, bar_height))
+        pygame.draw.rect(screen, (255, 255, 255), (bar_x, bar_y,
+                         bar_width, bar_height), 2)  # Borde blanco
 
 
 class Asteroid(pygame.sprite.Sprite):
-    
+    """
+    Clase para representar un asteroide en el juego.
+
+    Atributos:
+        position (Vector2): Posición del asteroide.
+        velocity (Vector2): Velocidad y dirección del movimiento.
+        random_numbers (list): Lista de números aleatorios validados.
+        ready_to_spawn (bool): Indica si el asteroide está listo para aparecer.
+        image (Surface): Imagen del asteroide.
+        rect (Rect): Rectángulo de colisión del asteroide.
+    """
+
     def __init__(self, pos=None, image=None):
         super().__init__()
-        
-        # Generar posición aleatoria en cualquier borde del mapa si no se proporciona
-        if pos is None:
-            pos = self.generate_random_position_on_edge()
-        self.position = Vector2(pos)
-
-        # Cargar imagen de asteroide si no se proporciona
-        if image is None:
-            self.image = pygame.image.load('assets/images/asteroid.png').convert_alpha()
-        else:
-            self.image = image
-
-        # Escalar el asteroide a un tamaño aleatorio
-        self.scale = random.uniform(0.8, 1.0)  # Tamaño aleatorio
-        self.image = pygame.transform.scale(self.image, (int(self.image.get_width() * self.scale), int(self.image.get_height() * self.scale)))
-        self.original_image = self.image  # Guardar imagen original para rotación
+        self.ready_to_spawn = False
+        self.random_numbers = self.generate_valid_random_numbers()
+        self.position = Vector2(pos or self.generate_random_position_on_edge())
+        self.image = self.load_asteroid_image(image)
+        self.velocity = self.generate_random_velocity()
+        self.angle = 0
+        self.rotation_speed = random.uniform(-2, 2)
         self.rect = self.image.get_rect(center=self.position)
 
-        # Velocidad y dirección aleatoria
-        self.velocity = Vector2(random.uniform(-2, 2), random.uniform(-2, 2))
+    # Generación y validación de números aleatorios
+    def generate_valid_random_numbers(self):
+        """Genera y valida una lista de números aleatorios."""
+        tester = RandomTests()
+        while True:
+            generator = LinearCongruence(
+                n=MAP_WIDTH, min_val=1, max_val=MAP_WIDTH)
+            Ri, random_numbers = generator.generate()
+            if tester.run_all_tests(Ri):
+                return random_numbers
+            print("Las pruebas fallaron, generando nuevos números...")
 
-        # Rotación del asteroide
-        self.angle = 0
-        self.rotation_speed = random.uniform(-2, 2)  # Velocidad de rotación aleatoria
-        self.fragmentation_level = 3
+    def get_random_number(self, min_val, max_val):
+        """Obtiene un número aleatorio validado dentro de un rango."""
+        number = self.random_numbers[self.random_index]
+        self.random_index = (self.random_index + 1) % len(self.random_numbers)
+        return number % (max_val - min_val + 1) + min_val
 
+    # Inicialización del asteroide
     def generate_random_position_on_edge(self):
         """Genera una posición aleatoria en los bordes del mapa."""
         side = random.choice(['top', 'bottom', 'left', 'right'])
         if side == 'top':
-            return random.randint(0, MAP_WIDTH), 0
+            return self.get_random_number(0, MAP_WIDTH), 0
         elif side == 'bottom':
-            return random.randint(0, MAP_WIDTH), MAP_HEIGHT
+            return self.get_random_number(0, MAP_WIDTH), MAP_HEIGHT
         elif side == 'left':
-            return 0, random.randint(0, MAP_HEIGHT)
+            return 0, self.get_random_number(0, MAP_HEIGHT)
         elif side == 'right':
-            return MAP_WIDTH, random.randint(0, MAP_HEIGHT)
+            return MAP_WIDTH, self.get_random_number(0, MAP_HEIGHT)
 
+    def load_asteroid_image(self, image):
+        """Carga y escala la imagen del asteroide."""
+        image = image or pygame.image.load(
+            'assets/images/asteroid.png').convert_alpha()
+        scale = random.uniform(0.8, 1.0)
+        return pygame.transform.scale(image, (int(image.get_width() * scale), int(image.get_height() * scale)))
+
+    def generate_random_velocity(self):
+        """Genera una velocidad aleatoria para el asteroide."""
+        return Vector2(random.uniform(-2, 2), random.uniform(-2, 2))
+
+    # Métodos de actualización
     def update(self, asteroid_group):
-        # Mover el asteroide
+        """Actualiza la posición, rotación y verifica colisiones del asteroide."""
+        if not self.ready_to_spawn:
+            return
+
+        # Movimiento y rotación
         self.position += self.velocity
         self.rect.center = self.position
-
-        # Rotar el asteroide
         self.angle += self.rotation_speed
         self.image = pygame.transform.rotate(self.original_image, self.angle)
         self.rect = self.image.get_rect(center=self.rect.center)
 
-        # Detectar colisiones con otros asteroides
-        #self.handle_collisions(asteroid_group)
-        
-        # Teletransportarse a través de los bordes del mapa
+        # Teletransportarse a través de los bordes
         self.wrap_around_map()
 
     def wrap_around_map(self):
-        """Permite que el asteroide aparezca en el lado opuesto cuando cruza los bordes."""
+        """Permite que el asteroide reaparezca en el lado opuesto al salir del mapa."""
         if self.position.x < 0:
             self.position.x = MAP_WIDTH
         elif self.position.x > MAP_WIDTH:
             self.position.x = 0
-
         if self.position.y < 0:
             self.position.y = MAP_HEIGHT
         elif self.position.y > MAP_HEIGHT:
             self.position.y = 0
 
-    def fragment(self, asteroid_group):
-        """Crea fragmentos más pequeños del asteroide si es posible."""
-        if self.fragmentation_level > 0:
-            for _ in range(3):
-                # Calcular una posición ligeramente desplazada para los nuevos asteroides
-                new_pos = (self.position.x + random.randint(-20, 20),
-                           self.position.y + random.randint(-20, 20))
-
-                # Reducir la escala del asteroide
-                new_scale = self.scale * 0.7  # Reducir el tamaño de los fragmentos
-                if new_scale < 0.3:
-                    continue  # Evitar asteroides demasiado pequeños
-
-                # Reducir el tamaño de la imagen
-                new_image = pygame.transform.scale(self.original_image,
-                                                   (int(self.original_image.get_width() * new_scale),
-                                                    int(self.original_image.get_height() * new_scale)))
-
-                # Crear un nuevo asteroide con una velocidad aleatoria
-                new_asteroid = Asteroid(pos=new_pos, image=new_image)
-                new_asteroid.scale = new_scale
-                new_asteroid.velocity = Vector2(random.uniform(-2, 2), random.uniform(-2, 2))  # Velocidades diferentes
-                new_asteroid.fragmentation_level = self.fragmentation_level - 1
-                asteroid_group.add(new_asteroid)
-
-            self.kill()  # Eliminar el asteroide original
-
+    # Gestión de colisiones y fragmentación
     def handle_collisions(self, asteroid_group):
-        """Gestiona las colisiones entre asteroides, invirtiendo su dirección."""
+        """Gestiona las colisiones entre asteroides."""
         for asteroid in asteroid_group:
             if asteroid != self and pygame.sprite.collide_rect(self, asteroid):
-                # Invertir direcciones al colisionar
                 self.velocity *= -1
                 asteroid.velocity *= -1
 
-class LinearCongruence:
-    def __init__(self, xo, n, k, c, g, min_val, max_val):
-        self.xo = xo
-        self.n = n
-        self.k = k
-        self.c = c
-        self.g = g
-        self.min_val = min_val
-        self.max_val = max_val
+    def fragment(self, asteroid_group):
+        """Fragmenta el asteroide en partes más pequeñas."""
+        self.kill()  # Elimina el asteroide actual
 
-    def generate(self):
-        """Genera una secuencia de números pseudoaleatorios."""
-        xn = self.xo
-        for _ in range(self.n):
-            xn = ((self.k * xn) + self.c) % 2**self.g
-            rn = xn / (2**self.g - 1)  # Normalizar a [0, 1)
-            scaled_rn = self.min_val + (self.max_val - self.min_val) * rn
-            yield xn, rn, scaled_rn
 
 class GlowWorm(pygame.sprite.Sprite):
     def __init__(self, pos, length=25, speed=25, color=(100, 255, 100)):
@@ -292,119 +286,122 @@ class GlowWorm(pygame.sprite.Sprite):
         self.length = length
         self.speed = speed
         self.color = color
-        self.favored_direction = random.choice(['up', 'down', 'left', 'right'])
         self.health = 100
-        
-        # Inicializar el generador de congruencia lineal con parámetros aleatorios
-        self.generator = LinearCongruence(
-            xo=random.randint(1, 1000),  # Semilla aleatoria
-            n=1000, 
-            k=random.randint(1, 10),    # k aleatorio
-            c=random.randint(1, 10),    # c aleatorio
-            g=random.randint(5, 10),    # g aleatorio
-            min_val=0, 
-            max_val=4
-        )
-        self.steps = [result[2] for result in self.generator.generate()]  # Obtener los números aleatorios generados
-        self.step_counter = 0
 
+        # Generador de números pseudoaleatorios
+        self.random_index = 0
+        self.random_numbers = None  # Inicialmente no hay números generados
+        self.steps = []
+        self.step_counter = 0
+        self.ready = False  # Indica si el objeto está listo
+
+        # Dirección favorecida
+        self.favored_direction = None
+
+        # Generar números aleatorios de forma diferida
+        self.generate_random_numbers()
+
+        # Inicialización de la imagen y rectángulo
         self.image = pygame.Surface((25, 25)).convert_alpha()
         self.image.fill(self.color)
         self.rect = self.image.get_rect(center=pos)
-    
+
+    def generate_random_numbers(self):
+        """Genera una lista de números aleatorios validados mediante pruebas."""
+        num_iterations = 100
+        min_val, max_val = 1, 4
+
+        # Intentar hasta pasar las pruebas
+        while not self.ready:
+            generator = LinearCongruence(
+                n=num_iterations, min_val=min_val, max_val=max_val)
+            Ri, random_numbers = generator.generate()
+            if RandomTests().run_all_tests(Ri):
+                self.random_numbers = random_numbers
+                self.steps = self.random_numbers
+                self.ready = True
+                self.favored_direction = self.get_direction_from_random()
+
+    def get_random_number(self):
+        """Obtiene un número aleatorio de la lista generada."""
+        if not self.ready:
+            return None
+        random_num = self.random_numbers[self.random_index]
+        self.random_index = (self.random_index + 1) % len(self.random_numbers)
+        return random_num
+
+    def get_direction_from_random(self):
+        """Obtiene una dirección basada en los números aleatorios."""
+        directions = ['up', 'down', 'left', 'right']
+        random_index = self.get_random_number() % len(directions)
+        return directions[int(random_index)]
+
     def update_favored_direction(self):
-        self.favored_direction = random.choice(['up', 'down', 'left', 'right'])
+        """Actualiza la dirección favorecida usando números aleatorios."""
+        if self.ready:
+            self.favored_direction = self.get_direction_from_random()
 
     def update(self, keys, laser_group):
-        # Obtener la dirección del movimiento de la caminata aleatoria
+        """Actualiza la posición del GlowWorm."""
+        if not self.ready:
+            return
+
         step = self.steps[self.step_counter]
-        self.step_counter = (self.step_counter + 1) % len(self.steps)  # Reiniciar si se llega al final de la lista
+        self.step_counter = (self.step_counter + 1) % len(self.steps)
 
         if self.step_counter % 30 == 0:
             self.update_favored_direction()
 
-        # Mover la cabeza en la dirección actual
+        # Mover la cabeza
         head_x, head_y = self.segments[0]
-        if self.favored_direction == 'up':
-            if 0 < step <= 2:  # Arriba (mayor probabilidad)
-                head_y -= self.speed
-            elif 2 < step <= 3:  # Abajo
-                head_y += self.speed
-            elif 3 < step <= 3.5:  # Derecha
-                head_x += self.speed
-            elif 3.5 < step <= 4:  # Izquierda
-                head_x -= self.speed
-        elif self.favored_direction == 'down':
-            if 0 < step <= 2:  # Abajo (mayor probabilidad)
-                head_y += self.speed
-            elif 2 < step <= 3:  # Arriba
-                head_y -= self.speed
-            elif 3 < step <= 3.5:  # Derecha
-                head_x += self.speed
-            elif 3.5 < step <= 4:  # Izquierda
-                head_x -= self.speed
-        elif self.favored_direction == 'left':
-            if 0 < step <= 2:  # Izquierda (mayor probabilidad)
-                head_x -= self.speed
-            elif 2 < step <= 3:  # Derecha
-                head_x += self.speed
-            elif 3 < step <= 3.5:  # Arriba
-                head_y -= self.speed
-            elif 3.5 < step <= 4:  # Abajo
-                head_y += self.speed
-        elif self.favored_direction == 'right':
-            if 0 < step <= 2:  # Derecha (mayor probabilidad)
-                head_x += self.speed
-            elif 2 < step <= 3:  # Izquierda
-                head_x -= self.speed
-            elif 3 < step <= 3.5:  # Arriba
-                head_y -= self.speed
-            elif 3.5 < step <= 4:  # Abajo
-                head_y += self.speed
+        movement = {
+            'up': lambda x, y: (x, y - self.speed),
+            'down': lambda x, y: (x, y + self.speed),
+            'left': lambda x, y: (x - self.speed, y),
+            'right': lambda x, y: (x + self.speed, y),
+        }
+        head_x, head_y = movement[self.favored_direction](head_x, head_y)
 
-        # Aplicar el efecto wraparound
+        # Wraparound
         head_x %= MAP_WIDTH
         head_y %= MAP_HEIGHT
 
         self.segments.insert(0, (head_x, head_y))
 
-        # Ajustar la longitud del gusano
         if len(self.segments) > self.length:
             self.segments.pop()
 
-        # Actualizar la posición del rectángulo
         self.rect.center = self.segments[0]
 
     def draw(self, screen, camera_x, camera_y):
+        """Dibuja el GlowWorm en la pantalla."""
+        if not self.ready:
+            return
         for i, segment in enumerate(self.segments):
             x, y = segment
-            # Calcular el radio del brillo en función de la posición del segmento
             radius = 5 + (len(self.segments) - i) * 2
-            # Dibujar un círculo con brillo
-            pygame.draw.circle(screen, self.color, (x - camera_x, y - camera_y), radius)
-            
-            
+            pygame.draw.circle(screen, self.color,
+                               (x - camera_x, y - camera_y), radius)
+
+
 class Kamikaze(pygame.sprite.Sprite):
-    def __init__(self, pos, kamikaze_image, player):  # Agrega la imagen del kamikaze
+    def __init__(self, pos, kamikaze_image, player):
         super().__init__()
-        self.image = kamikaze_image  # Asigna la imagen
+        self.image = kamikaze_image
         self.rect = self.image.get_rect(center=pos)
         self.position = Vector2(pos)
         self.velocity = Vector2(0, 0)
-        self.speed = 5  # Ajusta la velocidad según sea necesario
-        self.player = player  # Referencia al jugador para la persecución
+        self.speed = 5
+        self.player = player
 
     def update(self, keys, laser_group):
-        # Calcula la dirección hacia el jugador
+        """Actualiza la posición del Kamikaze."""
         direction = self.player.position - self.position
-        direction.normalize_ip()  # Normaliza el vector de dirección
-
-        # Mueve al kamikaze hacia el jugador
+        direction.normalize_ip()
         self.velocity = direction * self.speed
         self.position += self.velocity
-        self.rect.center = self.position
 
-        # Aplicar el efecto wraparound
+        # Wraparound
         if self.rect.right < 0:
             self.position.x = MAP_WIDTH
         elif self.rect.left > MAP_WIDTH:
@@ -414,14 +411,14 @@ class Kamikaze(pygame.sprite.Sprite):
         elif self.rect.top > MAP_HEIGHT:
             self.position.y = 0
 
-        self.rect.center = self.position  # Actualizar la posición del rectángulo
-            
+        self.rect.center = self.position
+
     def draw(self, screen, camera_x, camera_y):
-        # Ajustar la posición del kamikaze a la cámara
+        """Dibuja el Kamikaze en la pantalla."""
         adjusted_rect = self.rect.move(-camera_x, -camera_y)
         screen.blit(self.image, adjusted_rect)
-        
-        
+
+
 class Pripyat(pygame.sprite.Sprite):
     def __init__(self, pos, pripyat_image, player):
         super().__init__()
@@ -444,8 +441,10 @@ class Pripyat(pygame.sprite.Sprite):
             self.position += self.velocity
         else:
             self.orbit_angle += self.speed / self.orbit_radius
-            self.position.x = self.player.position.x + self.orbit_radius * math.cos(self.orbit_angle)
-            self.position.y = self.player.position.y + self.orbit_radius * math.sin(self.orbit_angle)
+            self.position.x = self.player.position.x + \
+                self.orbit_radius * math.cos(self.orbit_angle)
+            self.position.y = self.player.position.y + \
+                self.orbit_radius * math.sin(self.orbit_angle)
 
         self.wraparound()
         self.rect.center = self.position
