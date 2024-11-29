@@ -4,6 +4,7 @@ from sprites import PlayerShip, Asteroid, Laser, GlowWorm, Kamikaze
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT
 from test_nums.random_all_test import RandomTests
 from generator_nums.linear_congruence import LinearCongruence
+from power_manager import PowerManager
 
 
 def calculate_health_reduction(value):
@@ -26,11 +27,7 @@ def calculate_health_reduction_mild(value):
         return 3
 
 
-def main():
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    clock = pygame.time.Clock()
-
+def generate_random_nums():
     # Configurar el generador validado
     num_iterations = 200
     min_val, max_val = 1, MAP_WIDTH  # Rango para los números pseudoaleatorios
@@ -45,8 +42,18 @@ def main():
             n=num_iterations, min_val=min_val, max_val=max_val)
         Ri, random_numbers = generator.generate()
         result_test = tester.run_all_tests(Ri)  # Ejecutar las pruebas
-        if not result_test:
-            print("Generando nuevos números en MAIN...")
+        if tester.run_all_tests(Ri):
+            return random_numbers
+
+        print("Las pruebas en MAIN fallaron, generando nuevos números...")
+
+
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    clock = pygame.time.Clock()
+    random_numbers = generate_random_nums()
+    power_manager = PowerManager(random_numbers)
 
     # Cargar imágenes y sonidos
     ship_image = pygame.image.load('assets/images/ship.png').convert_alpha()
@@ -96,7 +103,6 @@ def main():
     running = True
     random_index = 0
     while running:
-
         current_time = pygame.time.get_ticks()
 
         for event in pygame.event.get():
@@ -166,7 +172,6 @@ def main():
                 random_value = 1
 
             reduction = calculate_health_reduction(random_value)
-            print("te pego un gusano: ", reduction)
             player.health -= reduction
 
             if player.health <= 0:
@@ -182,6 +187,10 @@ def main():
                 glowworm.health -= laser.damage
                 if glowworm.health <= 0:
                     glowworm.kill()  # Destruir el gusano si su vida llega a cero
+                    player.score += 15
+                    next_power = power_manager.get_next_power()
+                    print(f"Nuevo poder obtenido: {next_power}")
+                    power_manager.apply_power(player)
 
         # Dibujar los kamikazes ajustando la cámara
         for kamikaze in kamikazes_group:
@@ -198,7 +207,6 @@ def main():
                 random_value = 0  # Default si se agotan los números
 
             reduction = calculate_health_reduction_mild(random_value)
-            print("te pego un kamikaze: ", reduction)
             player.health -= reduction
 
             if player.health <= 0:
@@ -211,10 +219,20 @@ def main():
         for kamikaze, lasers in collisions.items():
             for laser in lasers:
                 kamikaze.kill()
+                player.score += 10
+                next_power = power_manager.get_next_power()
+                print(f"Nuevo poder obtenido: {next_power}")
+                power_manager.apply_power(player)
 
         # Dibujar los kamikazes ajustando la cámara
         for pripyat in pripyats_group:
-            pripyat.draw(screen, camera_x, camera_y)
+            pripyat.draw(screen, camera_x, camera_y) 
+
+        # Mostrar puntaje en la parte superior derecha 
+        score_text = font.render(
+            f"Puntaje: {player.score}", True, (255, 255, 255))
+        # Ajustar posición según el diseño
+        screen.blit(score_text, (SCREEN_WIDTH - 150, 10))
 
         # Calcular y mostrar FPS
         fps = str(int(clock.get_fps()))

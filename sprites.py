@@ -15,8 +15,8 @@ class Laser(pygame.sprite.Sprite):
         self.image = laser_image
         self.rect = self.image.get_rect(center=pos)
         self.position = Vector2(pos)
-        self.velocity = direction * 25  # Velocidad del láser
-        self.lifetime = 3000  # El láser desaparecerá después de 3 segundos
+        self.velocity = direction * 20  # Velocidad del láser
+        self.lifetime = 750  # El láser desaparecerá después de 0.75 segundos
         self.spawn_time = pygame.time.get_ticks()  # Tiempo en el que fue disparado
         self.damage = 100
 
@@ -24,7 +24,7 @@ class Laser(pygame.sprite.Sprite):
         self.position += self.velocity
         self.rect.center = self.position
 
-        # Si el láser ha estado en pantalla por más de 3 segundos, eliminarlo
+        # Si el láser ha estado en pantalla por más de 0.75 segundos, eliminarlo
         if pygame.time.get_ticks() - self.spawn_time > self.lifetime:
             self.kill()
 
@@ -56,6 +56,7 @@ class PlayerShip(pygame.sprite.Sprite):
         self.shoot_mode = "normal"  # Modos: 'normal', 'doble', 'rápido'
         self.mode_duration = 0  # Duración temporal del modo especial
         self.health = 100  # Vida inicial del jugador (1-100)
+        self.score = 0
         if self.shoot_mode == "doble":
             self.original_image = pygame.image.load(
                 'assets/images/ship_2.png').convert_alpha()
@@ -106,7 +107,7 @@ class PlayerShip(pygame.sprite.Sprite):
             # Intervalo entre disparos para modo normal (0.5 segundos)
             fire_rate = 500
 
-            if self.shoot_mode == "rápido":
+            if self.shoot_mode == "rapido":
                 fire_rate = 200  # Disparos rápidos (0.2 segundos)
             if current_time - self.last_shot_time > fire_rate:
                 self.shoot(laser_group)
@@ -280,7 +281,7 @@ class Asteroid(pygame.sprite.Sprite):
 
 
 class GlowWorm(pygame.sprite.Sprite):
-    def __init__(self, pos, length=25, speed=25, color=(100, 255, 100)):
+    def __init__(self, pos, length=20, speed=1, color=(100, 255, 100)):
         super().__init__()
         self.segments = [pos]
         self.length = length
