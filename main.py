@@ -30,22 +30,69 @@ def calculate_health_reduction_mild(value):
 def generate_random_nums():
     # Configurar el generador validado
     num_iterations = 200
-    min_val, max_val = 1, MAP_WIDTH  # Rango para los números pseudoaleatorios
+    min_val, max_val = 1, MAP_WIDTH
 
     # Inicializar el tester
     tester = RandomTests()
 
     # Generar y validar números aleatorios
-    result_test = False  # Inicializar como False para entrar en el bucle
+    result_test = False
     while not result_test:
         generator = LinearCongruence(
             n=num_iterations, min_val=min_val, max_val=max_val)
         Ri, random_numbers = generator.generate()
-        result_test = tester.run_all_tests(Ri)  # Ejecutar las pruebas
+        result_test = tester.run_all_tests(Ri)
         if tester.run_all_tests(Ri):
             return random_numbers
 
         print("Las pruebas en MAIN fallaron, generando nuevos números...")
+
+
+def show_game_over_screen(screen, font, player):
+    """Muestra la pantalla de Game Over."""
+
+    death_screen_bg = pygame.image.load(
+        'assets/images/123996-final.png').convert()
+    death_screen_bg = pygame.transform.scale(
+        death_screen_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    screen.blit(death_screen_bg, (0, 0))
+    game_over_text = font.render("¡Juego Terminado!", True, (255, 255, 255))
+    score_text = font.render(f"Puntaje: {player.score}", True, (255, 255, 255))
+    # Posicionar los textos
+    death_rect = game_over_text.get_rect(
+        center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+    score_rect = score_text.get_rect(
+        center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+
+    # Botones
+    button_width, button_height = 200, 50
+    button_color = (0, 128, 0)  # Verde
+    button_text_color = (255, 255, 255)  # Blanco
+
+    restart_button = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2,
+                                 SCREEN_HEIGHT // 2 + 50, button_width, button_height)
+    quit_button = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2,
+                              SCREEN_HEIGHT // 2 + 120, button_width, button_height)
+
+    pygame.draw.rect(screen, button_color, restart_button)
+    pygame.draw.rect(screen, (128, 0, 0), quit_button)  # Rojo
+
+    restart_text = font.render("Reiniciar", True, button_text_color)
+    quit_text = font.render("Cerrar", True, button_text_color)
+
+    restart_text_rect = restart_text.get_rect(center=restart_button.center)
+    quit_text_rect = quit_text.get_rect(center=quit_button.center)
+
+    # Renderizar todo en pantalla
+    screen.blit(game_over_text, death_rect)
+    screen.blit(score_text, score_rect)
+    screen.blit(restart_text, restart_text_rect)
+    screen.blit(quit_text, quit_text_rect)
+
+    pygame.display.flip()
+
+    return restart_button, quit_button
 
 
 def main():
@@ -175,8 +222,25 @@ def main():
             player.health -= reduction
 
             if player.health <= 0:
-                print("¡Has muerto!")
-                running = False
+                # Detener el bucle principal y mostrar la pantalla de Game Over
+                restart_button, quit_button = show_game_over_screen(
+                    screen, font, player)
+
+                game_over = True
+                while game_over:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            running = False
+                            game_over = False
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if restart_button.collidepoint(event.pos):
+                                # Reiniciar el juego
+                                main()  # Reinicia el juego llamando a la función principal
+                                game_over = False
+                                return
+                            elif quit_button.collidepoint(event.pos):
+                                running = False
+                                game_over = False
 
         # Colisiones entre gusanos de luz y láseres
         collisions = pygame.sprite.groupcollide(
@@ -210,8 +274,26 @@ def main():
             player.health -= reduction
 
             if player.health <= 0:
-                print("¡Has muerto!")
-                running = False
+                # Detener el bucle principal y mostrar la pantalla de Game Over
+                restart_button, quit_button = show_game_over_screen(
+                    screen, font, player.score)
+
+                game_over = True
+                while game_over:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            running = False
+                            game_over = False
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            if restart_button.collidepoint(event.pos):
+                                # Reiniciar el juego
+                                player.reset()  # Asegúrate de tener un método para reiniciar el jugador
+                                random_numbers = generate_random_nums()
+                                power_manager = PowerManager(random_numbers)
+                                game_over = False
+                            elif quit_button.collidepoint(event.pos):
+                                running = False
+                                game_over = False
 
         # Colisiones entre gusanos de luz y láseres
         collisions = pygame.sprite.groupcollide(
@@ -226,9 +308,9 @@ def main():
 
         # Dibujar los kamikazes ajustando la cámara
         for pripyat in pripyats_group:
-            pripyat.draw(screen, camera_x, camera_y) 
+            pripyat.draw(screen, camera_x, camera_y)
 
-        # Mostrar puntaje en la parte superior derecha 
+        # Mostrar puntaje en la parte superior derecha
         score_text = font.render(
             f"Puntaje: {player.score}", True, (255, 255, 255))
         # Ajustar posición según el diseño

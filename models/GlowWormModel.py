@@ -1,7 +1,9 @@
 import random
 import matplotlib.pyplot as plt
-
+from constants import UP, DOWN, LEFT, RIGHT
 # Generador de congruencia lineal
+
+
 class LinearCongruence:
     def __init__(self, xo, n, k, c, g, min_val, max_val):
         self.xo = xo
@@ -21,6 +23,8 @@ class LinearCongruence:
             yield scaled_rn
 
 # Caminata aleatoria del gusano de luz
+
+
 class GlowWormModel:
     def __init__(self, pos, length=25, speed=25, map_width=200, map_height=200):
         self.segments = [pos]
@@ -28,7 +32,7 @@ class GlowWormModel:
         self.speed = speed
         self.map_width = map_width
         self.map_height = map_height
-        self.favored_direction = random.choice(['up', 'down', 'left', 'right'])
+        self.favored_direction = random.choice([UP, DOWN, LEFT, RIGHT])
         self.generator = LinearCongruence(
             xo=random.randint(1, 100), n=1000, k=7, c=3, g=10, min_val=0, max_val=4
         )
@@ -37,19 +41,19 @@ class GlowWormModel:
 
     def update(self):
         if self.step_counter % 30 == 0:
-            self.favored_direction = random.choice(['up', 'down', 'left', 'right'])
-        
+            self.favored_direction = random.choice([UP, DOWN, LEFT, RIGHT])
+
         step = self.steps[self.step_counter]
         self.step_counter = (self.step_counter + 1) % len(self.steps)
-        
+
         head_x, head_y = self.segments[0]
-        if self.favored_direction == 'up' and step <= 2:
+        if self.favored_direction == UP and step <= 2:
             head_y -= self.speed
-        elif self.favored_direction == 'down' and step <= 2:
+        elif self.favored_direction == DOWN and step <= 2:
             head_y += self.speed
-        elif self.favored_direction == 'left' and step <= 2:
+        elif self.favored_direction == LEFT and step <= 2:
             head_x -= self.speed
-        elif self.favored_direction == 'right' and step <= 2:
+        elif self.favored_direction == RIGHT and step <= 2:
             head_x += self.speed
 
         head_x %= self.map_width
@@ -57,6 +61,7 @@ class GlowWormModel:
         self.segments.insert(0, (head_x, head_y))
         if len(self.segments) > self.length:
             self.segments.pop()
+
 
 # Simulación
 worm = GlowWormModel(pos=(100, 100), length=25, speed=5)
@@ -66,7 +71,8 @@ for _ in range(200):
     positions.append(worm.segments[0])
 
 positions = list(zip(*positions))
-plt.plot(positions[0], positions[1], color='green', label="Trayectoria del GlowWorm")
+plt.plot(positions[0], positions[1], color='green',
+         label="Trayectoria del GlowWorm")
 plt.title("Simulación con Método de Congruencia Lineal")
 plt.xlabel("X")
 plt.ylabel("Y")

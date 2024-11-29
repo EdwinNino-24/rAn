@@ -1,7 +1,7 @@
 import pygame
 import random
 from sprites import Asteroid, GlowWorm, Kamikaze, Pripyat
-from constants import SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT
+from constants import SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT, GLOWWORM, KAMIKAZE, PRIPYAT, ASTEROID
 from test_nums.random_all_test import RandomTests
 from generator_nums.linear_congruence import LinearCongruence
 
@@ -62,12 +62,12 @@ class Spawner:
         :param all_sprites: Grupo general de sprites.
         :param player: Referencia al jugador.
         """
-        if enemy_type == "glowworm":
+        if enemy_type == GLOWWORM:
             glowworm = GlowWorm(pos=(x, y), length=25,
                                 speed=25, color=(100, 255, 100))
             glowworm_group.add(glowworm)
             all_sprites.add(glowworm)
-        elif enemy_type == "kamikaze":
+        elif enemy_type == KAMIKAZE:
             kamikaze = Kamikaze(
                 pos=(x, y),
                 kamikaze_image=pygame.image.load(
@@ -76,7 +76,7 @@ class Spawner:
             )
             kamikazes_group.add(kamikaze)
             all_sprites.add(kamikaze)
-        elif enemy_type == "pripyat":
+        elif enemy_type == PRIPYAT:
             pripyat = Pripyat(
                 pos=(x, y),
                 pripyat_image=pygame.image.load(
@@ -99,7 +99,7 @@ class Spawner:
         """
         if current_time - self.last_spawn_time >= self.iat_model[self.current_index]:
             # Seleccionar aleatoriamente un tipo de enemigo
-            enemy_types = ["asteroid", "glowworm", "kamikaze", "pripyat"]
+            enemy_types = [ASTEROID, GLOWWORM, KAMIKAZE, PRIPYAT]
             random_index = self.get_random_number(0, len(enemy_types) - 1)
             enemy_type = enemy_types[int(random_index)]
 

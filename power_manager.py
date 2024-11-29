@@ -1,18 +1,21 @@
+from constants import NO_POWER, DOUBLE_SHOT, INCREASE_SCORE, INCREASE_LIFE, RAPID_FIRE, DOUBLE, FAST, NORMAL
+
+
 class PowerManager:
     def __init__(self, random_numbers):
         """
         Inicializa el administrador de poderes con números pseudoaleatorios pre-generados.
         :param random_numbers: Lista de números aleatorios pre-generados.
         """
-        self.states = ["no_power", "double_shot",
-                       "increase_score", "rapid_fire", "increase_life"]
-        self.current_power = "no_power"
+        self.states = [NO_POWER, DOUBLE_SHOT,
+                       INCREASE_SCORE, RAPID_FIRE, INCREASE_LIFE]
+        self.current_power = NO_POWER
         self.transition_matrix = {
-            "no_power": [0.3, 0.2, 0.3, 0.1, 0.1],
-            "double_shot": [0.5, 0.0, 0.2, 0.1, 0.2],
-            "increase_score": [0.6, 0.0, 0.2, 0.1, 0.2],
-            "rapid_fire": [0.25, 0.2, 0.4, 0.0, 0.15],
-            "increase_life": [0.3, 0.2, 0.25, 0.05, 0.2]
+            NO_POWER: [0.3, 0.2, 0.3, 0.1, 0.1],
+            DOUBLE_SHOT: [0.5, 0.0, 0.2, 0.1, 0.2],
+            INCREASE_SCORE: [0.6, 0.0, 0.2, 0.1, 0.2],
+            RAPID_FIRE: [0.25, 0.2, 0.4, 0.0, 0.15],
+            INCREASE_LIFE: [0.3, 0.2, 0.25, 0.05, 0.2]
         }
         self.random_numbers = random_numbers
         self.random_index = 0
@@ -48,14 +51,13 @@ class PowerManager:
         """
         Aplica el poder actual al jugador o al sistema de puntajes.
         """
-        if self.current_power == "double_shot":
-            player.shoot_mode = "doble"
-        elif self.current_power == "increase_score":
-            player.shoot_mode = "normal"
+        if self.current_power == DOUBLE_SHOT:
+            player.shoot_mode = DOUBLE
+        elif self.current_power == INCREASE_SCORE:
+            player.shoot_mode = NORMAL
             player.score += 20
-        elif self.current_power == "rapid_fire":
-            player.shoot_mode = "rapido"
-            print("rapid_fire")
-        elif self.current_power == "increase_life":
-            player.shoot_mode = "normal"
+        elif self.current_power == RAPID_FIRE:
+            player.shoot_mode = FAST
+        elif self.current_power == INCREASE_LIFE:
+            player.shoot_mode = NORMAL
             player.health += 20

@@ -1,7 +1,7 @@
 import math
 import pygame
 from pygame.math import Vector2
-from constants import SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT
+from constants import SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT, UP, DOWN, LEFT, RIGHT, TOP, BOTTOM, DOUBLE, FAST, NORMAL
 import random
 from test_nums.random_all_test import RandomTests
 from generator_nums.linear_congruence import LinearCongruence
@@ -53,11 +53,11 @@ class PlayerShip(pygame.sprite.Sprite):
         self.speed = 10  # Velocidad de movimiento
         self.moving_forward = False  # Estado para controlar si se está moviendo
         self.last_shot_time = 0  # Temporizador para controlar los disparos
-        self.shoot_mode = "normal"  # Modos: 'normal', 'doble', 'rápido'
+        self.shoot_mode = NORMAL  # Modos: 'normal', 'doble', 'rápido'
         self.mode_duration = 0  # Duración temporal del modo especial
         self.health = 100  # Vida inicial del jugador (1-100)
         self.score = 0
-        if self.shoot_mode == "doble":
+        if self.shoot_mode == DOUBLE:
             self.original_image = pygame.image.load(
                 'assets/images/ship_2.png').convert_alpha()
 
@@ -107,14 +107,14 @@ class PlayerShip(pygame.sprite.Sprite):
             # Intervalo entre disparos para modo normal (0.5 segundos)
             fire_rate = 500
 
-            if self.shoot_mode == "rapido":
+            if self.shoot_mode == FAST:
                 fire_rate = 200  # Disparos rápidos (0.2 segundos)
             if current_time - self.last_shot_time > fire_rate:
                 self.shoot(laser_group)
                 self.last_shot_time = current_time
 
     def shoot(self, laser_group):
-        if self.shoot_mode == "doble":
+        if self.shoot_mode == DOUBLE:
             # Crear dos láseres: uno a la izquierda y otro a la derecha
             # Distancia entre los disparos
             offset = Vector2(25, 0).rotate(-self.angle)
@@ -219,14 +219,14 @@ class Asteroid(pygame.sprite.Sprite):
     # Inicialización del asteroide
     def generate_random_position_on_edge(self):
         """Genera una posición aleatoria en los bordes del mapa."""
-        side = random.choice(['top', 'bottom', 'left', 'right'])
-        if side == 'top':
+        side = random.choice([TOP, BOTTOM, LEFT, RIGHT])
+        if side == TOP:
             return self.get_random_number(0, MAP_WIDTH), 0
-        elif side == 'bottom':
+        elif side == BOTTOM:
             return self.get_random_number(0, MAP_WIDTH), MAP_HEIGHT
-        elif side == 'left':
+        elif side == LEFT:
             return 0, self.get_random_number(0, MAP_HEIGHT)
-        elif side == 'right':
+        elif side == RIGHT:
             return MAP_WIDTH, self.get_random_number(0, MAP_HEIGHT)
 
     def load_asteroid_image(self, image):
@@ -333,7 +333,7 @@ class GlowWorm(pygame.sprite.Sprite):
 
     def get_direction_from_random(self):
         """Obtiene una dirección basada en los números aleatorios."""
-        directions = ['up', 'down', 'left', 'right']
+        directions = [UP, DOWN, LEFT, RIGHT]
         random_index = self.get_random_number() % len(directions)
         return directions[int(random_index)]
 
@@ -356,10 +356,10 @@ class GlowWorm(pygame.sprite.Sprite):
         # Mover la cabeza
         head_x, head_y = self.segments[0]
         movement = {
-            'up': lambda x, y: (x, y - self.speed),
-            'down': lambda x, y: (x, y + self.speed),
-            'left': lambda x, y: (x - self.speed, y),
-            'right': lambda x, y: (x + self.speed, y),
+            UP: lambda x, y: (x, y - self.speed),
+            DOWN: lambda x, y: (x, y + self.speed),
+            LEFT: lambda x, y: (x - self.speed, y),
+            RIGHT: lambda x, y: (x + self.speed, y),
         }
         head_x, head_y = movement[self.favored_direction](head_x, head_y)
 
