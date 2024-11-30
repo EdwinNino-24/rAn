@@ -50,7 +50,7 @@ class Spawner:
         self.random_index = (self.random_index + 1) % len(self.random_numbers)
         return min_val + (random_value % (max_val - min_val + 1))
 
-    def _create_enemy(self, enemy_type, x, y, glowworm_group, kamikazes_group, pripyat_group, all_sprites, player):
+    def _create_enemy(self, enemy_type, x, y, glowworm_group, kamikazes_group, pripyat_group, asteroid_group, all_sprites, player):
         """
         Crea y agrega un enemigo al grupo correspondiente.
         :param enemy_type: Tipo de enemigo ("glowworm", "kamikaze", "pripyat").
@@ -63,8 +63,7 @@ class Spawner:
         :param player: Referencia al jugador.
         """
         if enemy_type == GLOWWORM:
-            glowworm = GlowWorm(pos=(x, y), length=25,
-                                speed=25, color=(100, 255, 100))
+            glowworm = GlowWorm(pos=(x, y), length=25, color=(100, 255, 100))
             glowworm_group.add(glowworm)
             all_sprites.add(glowworm)
         elif enemy_type == KAMIKAZE:
@@ -81,12 +80,21 @@ class Spawner:
                 pos=(x, y),
                 pripyat_image=pygame.image.load(
                     "assets/images/pripyat.png").convert_alpha(),
-                player=player
+                player=player,
+                damage_sound_path="assets/sounds/raaa.wav"
             )
             pripyat_group.add(pripyat)
             all_sprites.add(pripyat)
+        elif enemy_type == ASTEROID:
+            # Generar un grupo de asteroides (ejemplo: entre 3 y 6)
+            for _ in range(5):
+                x = self.get_random_number(1, MAP_WIDTH)
+                y = self.get_random_number(1, MAP_HEIGHT)
+                asteroid = Asteroid(pos=(x, y))
+                asteroid_group.add(asteroid)
+                all_sprites.add(asteroid)
 
-    def spawn(self, current_time, asteroid_group, glowworm_group, kamikazes_group, pripyat_group, all_sprites, player):
+    def spawn(self, current_time, glowworm_group, kamikazes_group, pripyat_group, asteroid_group, all_sprites, player):
         """
         Genera un nuevo enemigo si se cumple el intervalo actual.
         :param current_time: Tiempo actual del juego.
@@ -103,13 +111,26 @@ class Spawner:
             random_index = self.get_random_number(0, len(enemy_types) - 1)
             enemy_type = enemy_types[int(random_index)]
 
-            # Generar posición aleatoria
-            x = self.get_random_number(1, MAP_WIDTH)
-            y = self.get_random_number(1, MAP_HEIGHT)
+            # Generar posición aleatoria fuera del rango visible de la cámara
+            spawn_margin = 100  # Margen adicional fuera de la pantalla
+            valid_spawn = False
+
+            while not valid_spawn:
+                x = self.get_random_number(1, MAP_WIDTH)
+                y = self.get_random_number(1, MAP_HEIGHT)
+
+                # Verificar si está fuera del rango de la cámara
+                if (
+                    x < player.rect.centerx - SCREEN_WIDTH // 2 - spawn_margin
+                    or x > player.rect.centerx + SCREEN_WIDTH // 2 + spawn_margin
+                    or y < player.rect.centery - SCREEN_HEIGHT // 2 - spawn_margin
+                    or y > player.rect.centery + SCREEN_HEIGHT // 2 + spawn_margin
+                ):
+                    valid_spawn = True
 
             # Crear el enemigo correspondiente
             self._create_enemy(
-                enemy_type, x, y, glowworm_group, kamikazes_group, pripyat_group, all_sprites, player
+                enemy_type, x, y, glowworm_group, kamikazes_group, pripyat_group, asteroid_group, all_sprites, player
             )
 
             # Actualizar el tiempo del último spawn y el índice del modelo

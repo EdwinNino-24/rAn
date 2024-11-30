@@ -15,8 +15,8 @@ class Laser(pygame.sprite.Sprite):
         self.image = laser_image
         self.rect = self.image.get_rect(center=pos)
         self.position = Vector2(pos)
-        self.velocity = direction * 20  # Velocidad del láser
-        self.lifetime = 750  # El láser desaparecerá después de 0.75 segundos
+        self.velocity = direction * 30  # Velocidad del láser
+        self.lifetime = 3000  # El láser desaparecerá después de 0.75 segundos
         self.spawn_time = pygame.time.get_ticks()  # Tiempo en el que fue disparado
         self.damage = 100
 
@@ -104,11 +104,11 @@ class PlayerShip(pygame.sprite.Sprite):
         # Disparar láser con tecla ESPACIO
         if keys[pygame.K_SPACE]:
             current_time = pygame.time.get_ticks()
-            # Intervalo entre disparos para modo normal (0.5 segundos)
-            fire_rate = 500
+            # Intervalo entre disparos para modo normal (0.3 segundos)
+            fire_rate = 300
 
             if self.shoot_mode == FAST:
-                fire_rate = 200  # Disparos rápidos (0.2 segundos)
+                fire_rate = 150  # Disparos rápidos (0.15 segundos)
             if current_time - self.last_shot_time > fire_rate:
                 self.shoot(laser_group)
                 self.last_shot_time = current_time
@@ -175,117 +175,89 @@ class PlayerShip(pygame.sprite.Sprite):
 
 
 class Asteroid(pygame.sprite.Sprite):
-    """
-    Clase para representar un asteroide en el juego.
-
-    Atributos:
-        position (Vector2): Posición del asteroide.
-        velocity (Vector2): Velocidad y dirección del movimiento.
-        random_numbers (list): Lista de números aleatorios validados.
-        ready_to_spawn (bool): Indica si el asteroide está listo para aparecer.
-        image (Surface): Imagen del asteroide.
-        rect (Rect): Rectángulo de colisión del asteroide.
-    """
-
-    def __init__(self, pos=None, image=None):
+    def __init__(self, pos=None, image=None, explosion_sound_path='assets/sounds/explosion.wav'):
         super().__init__()
-        self.ready_to_spawn = False
-        self.random_numbers = self.generate_valid_random_numbers()
-        self.position = Vector2(pos or self.generate_random_position_on_edge())
-        self.image = self.load_asteroid_image(image)
-        self.velocity = self.generate_random_velocity()
-        self.angle = 0
-        self.rotation_speed = random.uniform(-2, 2)
+        
+        # Generar posición aleatoria en cualquier borde del mapa si no se proporciona
+        if pos is None:
+            pos = self.generate_random_position_on_edge()
+        self.position = Vector2(pos)
+
+        # Cargar imagen de asteroide si no se proporciona
+        if image is None:
+            self.image = pygame.image.load('assets/images/asteroid.png').convert_alpha()
+        else:
+            self.image = image
+
+        # Escalar el asteroide a un tamaño aleatorio
+        self.scale = random.uniform(0.5, 1)  # Tamaño aleatorio
+        self.image = pygame.transform.scale(
+            self.image, 
+            (int(self.image.get_width() * self.scale), int(self.image.get_height() * self.scale))
+        )
+        self.original_image = self.image  # Guardar imagen original para rotación
         self.rect = self.image.get_rect(center=self.position)
 
-    # Generación y validación de números aleatorios
-    def generate_valid_random_numbers(self):
-        """Genera y valida una lista de números aleatorios."""
-        tester = RandomTests()
-        while True:
-            generator = LinearCongruence(
-                n=MAP_WIDTH, min_val=1, max_val=MAP_WIDTH)
-            Ri, random_numbers = generator.generate()
-            if tester.run_all_tests(Ri):
-                return random_numbers
-            print("Las pruebas fallaron, generando nuevos números...")
+        # Velocidad y dirección aleatoria
+        self.velocity = Vector2(random.uniform(-2, 2), random.uniform(-2, 2))
 
-    def get_random_number(self, min_val, max_val):
-        """Obtiene un número aleatorio validado dentro de un rango."""
-        number = self.random_numbers[self.random_index]
-        self.random_index = (self.random_index + 1) % len(self.random_numbers)
-        return number % (max_val - min_val + 1) + min_val
+        # Rotación del asteroide
+        self.angle = 0
+        self.rotation_speed = random.uniform(-3, 3)
 
-    # Inicialización del asteroide
+        # Sonido de explosión
+        self.explosion_sound = pygame.mixer.Sound(explosion_sound_path)
+
     def generate_random_position_on_edge(self):
         """Genera una posición aleatoria en los bordes del mapa."""
-        side = random.choice([TOP, BOTTOM, LEFT, RIGHT])
-        if side == TOP:
-            return self.get_random_number(0, MAP_WIDTH), 0
-        elif side == BOTTOM:
-            return self.get_random_number(0, MAP_WIDTH), MAP_HEIGHT
-        elif side == LEFT:
-            return 0, self.get_random_number(0, MAP_HEIGHT)
-        elif side == RIGHT:
-            return MAP_WIDTH, self.get_random_number(0, MAP_HEIGHT)
+        edge = random.choice(['top', 'bottom', 'left', 'right'])
+        if edge == 'top':
+            return (random.uniform(0, MAP_WIDTH), 0)
+        elif edge == 'bottom':
+            return (random.uniform(0, MAP_WIDTH), MAP_HEIGHT)
+        elif edge == 'left':
+            return (0, random.uniform(0, MAP_HEIGHT))
+        else:  # 'right'
+            return (MAP_WIDTH, random.uniform(0, MAP_HEIGHT))
 
-    def load_asteroid_image(self, image):
-        """Carga y escala la imagen del asteroide."""
-        image = image or pygame.image.load(
-            'assets/images/asteroid.png').convert_alpha()
-        scale = random.uniform(0.8, 1.0)
-        return pygame.transform.scale(image, (int(image.get_width() * scale), int(image.get_height() * scale)))
-
-    def generate_random_velocity(self):
-        """Genera una velocidad aleatoria para el asteroide."""
-        return Vector2(random.uniform(-2, 2), random.uniform(-2, 2))
-
-    # Métodos de actualización
-    def update(self, asteroid_group):
-        """Actualiza la posición, rotación y verifica colisiones del asteroide."""
-        if not self.ready_to_spawn:
-            return
-
-        # Movimiento y rotación
+    def update(self, player, laser_group):
+        # Mover el asteroide
         self.position += self.velocity
         self.rect.center = self.position
+
+        # Rotar el asteroide
         self.angle += self.rotation_speed
         self.image = pygame.transform.rotate(self.original_image, self.angle)
         self.rect = self.image.get_rect(center=self.rect.center)
 
-        # Teletransportarse a través de los bordes
+        # Teletransportarse a través de los bordes del mapa
         self.wrap_around_map()
 
     def wrap_around_map(self):
-        """Permite que el asteroide reaparezca en el lado opuesto al salir del mapa."""
+        """Permite que el asteroide aparezca en el lado opuesto cuando cruza los bordes."""
         if self.position.x < 0:
             self.position.x = MAP_WIDTH
         elif self.position.x > MAP_WIDTH:
             self.position.x = 0
+
         if self.position.y < 0:
             self.position.y = MAP_HEIGHT
         elif self.position.y > MAP_HEIGHT:
             self.position.y = 0
 
-    # Gestión de colisiones y fragmentación
-    def handle_collisions(self, asteroid_group):
-        """Gestiona las colisiones entre asteroides."""
-        for asteroid in asteroid_group:
-            if asteroid != self and pygame.sprite.collide_rect(self, asteroid):
-                self.velocity *= -1
-                asteroid.velocity *= -1
+    def draw(self, screen, camera_x, camera_y):
+        """Dibuja el asteroide en la pantalla."""
+        adjusted_rect = self.rect.move(-camera_x, -camera_y)
+        screen.blit(self.image, adjusted_rect)
 
-    def fragment(self, asteroid_group):
-        """Fragmenta el asteroide en partes más pequeñas."""
-        self.kill()  # Elimina el asteroide actual
 
 
 class GlowWorm(pygame.sprite.Sprite):
-    def __init__(self, pos, length=20, speed=1, color=(100, 255, 100)):
+    def __init__(self, pos, length=20, color=(100, 255, 100)):
         super().__init__()
         self.segments = [pos]
         self.length = length
-        self.speed = speed
+        self.speed = random.uniform(5, 15)
         self.color = color
         self.health = 100
 
@@ -392,11 +364,18 @@ class Kamikaze(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=pos)
         self.position = Vector2(pos)
         self.velocity = Vector2(0, 0)
-        self.speed = 5
+        self.base_speed = 5  # Velocidad base
+        self.speed = self.base_speed
         self.player = player
+
+    def update_speed(self, score):
+        """Actualiza la velocidad en función del puntaje."""
+        self.speed = self.base_speed + (score // 100)  # Incrementar 1 unidad de velocidad cada 100 puntos
 
     def update(self, keys, laser_group):
         """Actualiza la posición del Kamikaze."""
+        self.update_speed(self.player.score)  # Actualizar la velocidad según el puntaje
+
         direction = self.player.position - self.position
         direction.normalize_ip()
         self.velocity = direction * self.speed
@@ -420,19 +399,35 @@ class Kamikaze(pygame.sprite.Sprite):
         screen.blit(self.image, adjusted_rect)
 
 
+
 class Pripyat(pygame.sprite.Sprite):
-    def __init__(self, pos, pripyat_image, player):
+    def __init__(self, pos, pripyat_image, damage_sound_path, player):
         super().__init__()
-        self.image = pripyat_image
+        self.original_image = pripyat_image
+        self.image = self.original_image
         self.rect = self.image.get_rect(center=pos)
         self.position = Vector2(pos)
         self.velocity = Vector2(0, 0)
-        self.speed = 3
+        self.base_speed = 3  # Velocidad base
+        self.speed = self.base_speed
         self.player = player
         self.orbit_radius = 100
         self.orbit_angle = 0
+        self.rotation_angle = 0
+        self.rotation_speed = 5
+        self.damage_interval = 1500
+        self.last_damage_time = 0
+        self.damage_sound = pygame.mixer.Sound(damage_sound_path)
+        self.health = 300
+
+    def update_speed(self, score):
+        """Actualiza la velocidad en función del puntaje."""
+        self.speed = self.base_speed + (score // 150)  # Incrementar 1 unidad de velocidad cada 150 puntos
 
     def update(self, keys, laser_group):
+        """Actualiza la posición del Pripyat."""
+        self.update_speed(self.player.score)  # Actualizar la velocidad según el puntaje
+
         distance_to_player = self.position.distance_to(self.player.position)
 
         if distance_to_player > self.orbit_radius:
@@ -442,10 +437,20 @@ class Pripyat(pygame.sprite.Sprite):
             self.position += self.velocity
         else:
             self.orbit_angle += self.speed / self.orbit_radius
-            self.position.x = self.player.position.x + \
-                self.orbit_radius * math.cos(self.orbit_angle)
-            self.position.y = self.player.position.y + \
-                self.orbit_radius * math.sin(self.orbit_angle)
+            self.position.x = self.player.position.x + self.orbit_radius * math.cos(self.orbit_angle)
+            self.position.y = self.player.position.y + self.orbit_radius * math.sin(self.orbit_angle)
+
+        if distance_to_player < 150:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.last_damage_time > self.damage_interval:
+                self.player.health -= 15
+                self.last_damage_time = current_time
+                self.damage_sound.play()
+
+        self.rotation_angle += self.rotation_speed
+        self.rotation_angle %= 360
+        self.image = pygame.transform.rotate(self.original_image, self.rotation_angle)
+        self.rect = self.image.get_rect(center=self.rect.center)
 
         self.wraparound()
         self.rect.center = self.position
@@ -463,3 +468,4 @@ class Pripyat(pygame.sprite.Sprite):
     def draw(self, screen, camera_x, camera_y):
         adjusted_rect = self.rect.move(-camera_x, -camera_y)
         screen.blit(self.image, adjusted_rect)
+
