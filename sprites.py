@@ -16,7 +16,7 @@ class Laser(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=pos)
         self.position = Vector2(pos)
         self.velocity = direction * 30  # Velocidad del láser
-        self.lifetime = 3000  # El láser desaparecerá después de 0.75 segundos
+        self.lifetime = 750  # El láser desaparecerá después de 0.75 segundos
         self.spawn_time = pygame.time.get_ticks()  # Tiempo en el que fue disparado
         self.damage = 100
 
@@ -219,7 +219,6 @@ class Asteroid(pygame.sprite.Sprite):
         num_iterations = 100
         min_val, max_val = 1, 4
 
-        # Intentar hasta pasar las pruebas
         while not self.ready:
             generator = LinearCongruence(
                 n=num_iterations, min_val=min_val, max_val=max_val)
@@ -244,8 +243,7 @@ class Asteroid(pygame.sprite.Sprite):
         """Obtiene un número aleatorio flotante entre min_val y max_val."""
         if not self.ready:
             return None
-        random_num = self.get_random_number()  # Obtiene el número de la lista
-        # Escala el número a un rango flotante
+        random_num = self.get_random_number()
         return min_val + (max_val - min_val) * random_num / 100.0
 
     def generate_random_position_on_edge(self):

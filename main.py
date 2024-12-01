@@ -5,8 +5,6 @@ from constants import SCREEN_WIDTH, SCREEN_HEIGHT, MAP_WIDTH, MAP_HEIGHT
 from test_nums.random_all_test import RandomTests
 from generator_nums.linear_congruence import LinearCongruence
 from power_manager import PowerManager
-from numpy import random
-
 
 def calculate_health_reduction(value):
     """Calcula la reducción de salud según el valor aleatorio."""
@@ -299,7 +297,7 @@ def main():
             asteroid_a.play()
             player.health -= 5
 
-        # Colisiones entre gusanos de luz y láseres
+        # Colisiones entre kamikazes y láseres
         collisions = pygame.sprite.groupcollide(
             kamikazes_group, laser_group, False, True)
         for kamikaze, lasers in collisions.items():
