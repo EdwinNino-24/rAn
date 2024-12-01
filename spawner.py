@@ -36,7 +36,6 @@ class Spawner:
             Ri, random_numbers = generator.generate()
             if tester.run_all_tests(Ri):
                 return random_numbers
-            print("Las pruebas en SPAWNER fallaron, generando nuevos números...")
 
     def get_random_number(self, min_val, max_val):
         """

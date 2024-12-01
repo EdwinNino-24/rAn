@@ -177,7 +177,10 @@ class PlayerShip(pygame.sprite.Sprite):
 class Asteroid(pygame.sprite.Sprite):
     def __init__(self, pos=None, image=None, explosion_sound_path='assets/sounds/explosion.wav'):
         super().__init__()
-        
+        self.random_numbers = None
+        self.ready = False  # Indica si el objeto está listo
+        self.random_index = 0
+        self.generate_random_numbers()
         # Generar posición aleatoria en cualquier borde del mapa si no se proporciona
         if pos is None:
             pos = self.generate_random_position_on_edge()
@@ -185,40 +188,77 @@ class Asteroid(pygame.sprite.Sprite):
 
         # Cargar imagen de asteroide si no se proporciona
         if image is None:
-            self.image = pygame.image.load('assets/images/asteroid.png').convert_alpha()
+            self.image = pygame.image.load(
+                'assets/images/asteroid.png').convert_alpha()
         else:
             self.image = image
 
         # Escalar el asteroide a un tamaño aleatorio
-        self.scale = random.uniform(0.5, 1)  # Tamaño aleatorio
+        self.scale = self.get_random_number_in_range(50, 100) / 100.0
         self.image = pygame.transform.scale(
-            self.image, 
-            (int(self.image.get_width() * self.scale), int(self.image.get_height() * self.scale))
+            self.image,
+            (int(self.image.get_width() * self.scale),
+             int(self.image.get_height() * self.scale))
         )
         self.original_image = self.image  # Guardar imagen original para rotación
         self.rect = self.image.get_rect(center=self.position)
 
         # Velocidad y dirección aleatoria
-        self.velocity = Vector2(random.uniform(-2, 2), random.uniform(-2, 2))
+        self.velocity = Vector2(
+            self.get_random_number_in_range(-2, 2), self.get_random_number_in_range(-2, 2))
 
         # Rotación del asteroide
         self.angle = 0
-        self.rotation_speed = random.uniform(-3, 3)
+        self.rotation_speed = self.get_random_number_in_range(-3, 3)
 
         # Sonido de explosión
         self.explosion_sound = pygame.mixer.Sound(explosion_sound_path)
 
+    def generate_random_numbers(self):
+        """Genera una lista de números aleatorios validados mediante pruebas."""
+        num_iterations = 100
+        min_val, max_val = 1, 4
+
+        # Intentar hasta pasar las pruebas
+        while not self.ready:
+            generator = LinearCongruence(
+                n=num_iterations, min_val=min_val, max_val=max_val)
+            Ri, random_numbers = generator.generate()
+            if RandomTests().run_all_tests(Ri):
+                self.random_numbers = random_numbers
+                self.ready = True
+
+    def get_random_number(self):
+        """Obtiene un número aleatorio de la lista generada."""
+        random_num = self.random_numbers[self.random_index]
+        self.random_index = (self.random_index + 1) % len(self.random_numbers)
+        return random_num
+
+    def get_direction_from_random(self):
+        """Obtiene una dirección basada en los números aleatorios."""
+        directions = [UP, DOWN, LEFT, RIGHT]
+        random_index = self.get_random_number() % len(directions)
+        return directions[int(random_index)]
+
+    def get_random_number_in_range(self, min_val, max_val):
+        """Obtiene un número aleatorio flotante entre min_val y max_val."""
+        if not self.ready:
+            return None
+        random_num = self.get_random_number()  # Obtiene el número de la lista
+        # Escala el número a un rango flotante
+        return min_val + (max_val - min_val) * random_num / 100.0
+
     def generate_random_position_on_edge(self):
         """Genera una posición aleatoria en los bordes del mapa."""
-        edge = random.choice(['top', 'bottom', 'left', 'right'])
-        if edge == 'top':
-            return (random.uniform(0, MAP_WIDTH), 0)
-        elif edge == 'bottom':
-            return (random.uniform(0, MAP_WIDTH), MAP_HEIGHT)
-        elif edge == 'left':
-            return (0, random.uniform(0, MAP_HEIGHT))
-        else:  # 'right'
-            return (MAP_WIDTH, random.uniform(0, MAP_HEIGHT))
+        edge = self.get_direction_from_random()
+        if edge == TOP:
+            return (self.get_random_in_range(0, MAP_WIDTH), 0)
+        elif edge == BOTTOM:
+            return (self.get_random_in_range(0, MAP_WIDTH), MAP_HEIGHT)
+        elif edge == LEFT:
+            return (0, self.get_random_in_range(0, MAP_HEIGHT))
+        else:
+            return (MAP_WIDTH, self.get_random_in_range(0, MAP_HEIGHT))
 
     def update(self, player, laser_group):
         # Mover el asteroide
@@ -251,33 +291,31 @@ class Asteroid(pygame.sprite.Sprite):
         screen.blit(self.image, adjusted_rect)
 
 
-
 class GlowWorm(pygame.sprite.Sprite):
     def __init__(self, pos, length=20, color=(100, 255, 100)):
         super().__init__()
         self.segments = [pos]
         self.length = length
-        self.speed = random.uniform(5, 15)
-        self.color = color
-        self.health = 100
-
-        # Generador de números pseudoaleatorios
-        self.random_index = 0
         self.random_numbers = None  # Inicialmente no hay números generados
+        self.random_index = 0
+        self.ready = False  # Indica si el objeto está listo
         self.steps = []
         self.step_counter = 0
-        self.ready = False  # Indica si el objeto está listo
-
-        # Dirección favorecida
         self.favored_direction = None
-
-        # Generar números aleatorios de forma diferida
         self.generate_random_numbers()
+        self.speed = self.get_random_in_range(5, 15)
+        self.color = color
+        self.health = 100
 
         # Inicialización de la imagen y rectángulo
         self.image = pygame.Surface((25, 25)).convert_alpha()
         self.image.fill(self.color)
         self.rect = self.image.get_rect(center=pos)
+
+    def get_random_in_range(self, min_val, max_val):
+        """Devuelve un número aleatorio dentro de un rango usando get_random_number."""
+        random_num = self.get_random_number()  # Obtiene el número de la lista
+        return min_val + (max_val - min_val) * random_num / 100.0
 
     def generate_random_numbers(self):
         """Genera una lista de números aleatorios validados mediante pruebas."""
@@ -296,9 +334,6 @@ class GlowWorm(pygame.sprite.Sprite):
                 self.favored_direction = self.get_direction_from_random()
 
     def get_random_number(self):
-        """Obtiene un número aleatorio de la lista generada."""
-        if not self.ready:
-            return None
         random_num = self.random_numbers[self.random_index]
         self.random_index = (self.random_index + 1) % len(self.random_numbers)
         return random_num
@@ -370,11 +405,13 @@ class Kamikaze(pygame.sprite.Sprite):
 
     def update_speed(self, score):
         """Actualiza la velocidad en función del puntaje."""
-        self.speed = self.base_speed + (score // 100)  # Incrementar 1 unidad de velocidad cada 100 puntos
+        self.speed = self.base_speed + \
+            (score // 100)  # Incrementar 1 unidad de velocidad cada 100 puntos
 
     def update(self, keys, laser_group):
         """Actualiza la posición del Kamikaze."""
-        self.update_speed(self.player.score)  # Actualizar la velocidad según el puntaje
+        self.update_speed(
+            self.player.score)  # Actualizar la velocidad según el puntaje
 
         direction = self.player.position - self.position
         direction.normalize_ip()
@@ -399,7 +436,6 @@ class Kamikaze(pygame.sprite.Sprite):
         screen.blit(self.image, adjusted_rect)
 
 
-
 class Pripyat(pygame.sprite.Sprite):
     def __init__(self, pos, pripyat_image, damage_sound_path, player):
         super().__init__()
@@ -422,11 +458,13 @@ class Pripyat(pygame.sprite.Sprite):
 
     def update_speed(self, score):
         """Actualiza la velocidad en función del puntaje."""
-        self.speed = self.base_speed + (score // 150)  # Incrementar 1 unidad de velocidad cada 150 puntos
+        self.speed = self.base_speed + \
+            (score // 150)  # Incrementar 1 unidad de velocidad cada 150 puntos
 
     def update(self, keys, laser_group):
         """Actualiza la posición del Pripyat."""
-        self.update_speed(self.player.score)  # Actualizar la velocidad según el puntaje
+        self.update_speed(
+            self.player.score)  # Actualizar la velocidad según el puntaje
 
         distance_to_player = self.position.distance_to(self.player.position)
 
@@ -437,8 +475,10 @@ class Pripyat(pygame.sprite.Sprite):
             self.position += self.velocity
         else:
             self.orbit_angle += self.speed / self.orbit_radius
-            self.position.x = self.player.position.x + self.orbit_radius * math.cos(self.orbit_angle)
-            self.position.y = self.player.position.y + self.orbit_radius * math.sin(self.orbit_angle)
+            self.position.x = self.player.position.x + \
+                self.orbit_radius * math.cos(self.orbit_angle)
+            self.position.y = self.player.position.y + \
+                self.orbit_radius * math.sin(self.orbit_angle)
 
         if distance_to_player < 150:
             current_time = pygame.time.get_ticks()
@@ -449,7 +489,8 @@ class Pripyat(pygame.sprite.Sprite):
 
         self.rotation_angle += self.rotation_speed
         self.rotation_angle %= 360
-        self.image = pygame.transform.rotate(self.original_image, self.rotation_angle)
+        self.image = pygame.transform.rotate(
+            self.original_image, self.rotation_angle)
         self.rect = self.image.get_rect(center=self.rect.center)
 
         self.wraparound()
@@ -468,4 +509,3 @@ class Pripyat(pygame.sprite.Sprite):
     def draw(self, screen, camera_x, camera_y):
         adjusted_rect = self.rect.move(-camera_x, -camera_y)
         screen.blit(self.image, adjusted_rect)
-

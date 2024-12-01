@@ -29,11 +29,8 @@ def calculate_health_reduction_mild(value):
 
 
 def generate_random_nums():
-    # Configurar el generador validado
     num_iterations = 200
     min_val, max_val = 1, MAP_WIDTH
-
-    # Inicializar el tester
     tester = RandomTests()
 
     # Generar y validar números aleatorios
@@ -46,12 +43,9 @@ def generate_random_nums():
         if tester.run_all_tests(Ri):
             return random_numbers
 
-        print("Las pruebas en MAIN fallaron, generando nuevos números...")
-
-
 def show_game_over_screen(screen, font, player):
     """Muestra la pantalla de Game Over."""
-    
+
     death_screen_bg = pygame.image.load(
         'assets/images/123996-final.png').convert()
     death_screen_bg = pygame.transform.scale(
@@ -102,17 +96,18 @@ def main():
     clock = pygame.time.Clock()
     random_numbers = generate_random_nums()
     power_manager = PowerManager(random_numbers)
-    
+
     # Cargar sonidos
     laser_hit_sound = pygame.mixer.Sound('assets/sounds/explosion.wav')
-    pygame.mixer.Sound.set_volume(laser_hit_sound, 0.5)  # Ajusta el volumen (opcional)
+    # Ajusta el volumen (opcional)
+    pygame.mixer.Sound.set_volume(laser_hit_sound, 0.5)
 
     # Configurar la música de fondo
     pygame.mixer.music.load('assets/sounds/backgroundMusic.wav')
     pygame.mixer.music.set_volume(0.3)  # Ajusta el volumen de la música
-    pygame.mixer.music.play(loops=-1)  # Reproducir en bucle (-1 es para bucle infinito)
+    # Reproducir en bucle (-1 es para bucle infinito)
+    pygame.mixer.music.play(loops=-1)
     asteroid_a = pygame.mixer.Sound('assets/sounds/playerLoose.wav')
-
 
     # Cargar imágenes y sonidos
     ship_image = pygame.image.load('assets/images/ship.png').convert_alpha()
@@ -161,7 +156,7 @@ def main():
     font = pygame.font.Font(None, 30)
     running = True
     random_index = 0
-    
+
     while running:
         current_time = pygame.time.get_ticks()
 
@@ -241,7 +236,7 @@ def main():
                         elif event.type == pygame.MOUSEBUTTONDOWN:
                             if restart_button.collidepoint(event.pos):
                                 # Reiniciar el juego
-                                main()  # Reinicia el juego llamando a la función principal
+                                main()
                                 game_over = False
                                 return
                             elif quit_button.collidepoint(event.pos):
@@ -260,7 +255,6 @@ def main():
                     glowworm.kill()  # Destruir el gusano si su vida llega a cero
                     player.score += 15
                     next_power = power_manager.get_next_power()
-                    print(f"Nuevo poder obtenido: {next_power}")
                     power_manager.apply_power(player)
 
         # Dibujar los kamikazes ajustando la cámara
@@ -293,14 +287,14 @@ def main():
                         elif event.type == pygame.MOUSEBUTTONDOWN:
                             if restart_button.collidepoint(event.pos):
                                 # Reiniciar el juego
-                                player.reset()  # Asegúrate de tener un método para reiniciar el jugador
+                                player.reset()
                                 random_numbers = generate_random_nums()
                                 power_manager = PowerManager(random_numbers)
                                 game_over = False
                             elif quit_button.collidepoint(event.pos):
                                 running = False
                                 game_over = False
-                                
+
         if pygame.sprite.spritecollide(player, asteroids_group, True):
             asteroid_a.play()
             player.health -= 5
@@ -314,13 +308,12 @@ def main():
                 kamikaze.kill()
                 player.score += 10
                 next_power = power_manager.get_next_power()
-                print(f"Nuevo poder obtenido: {next_power}")
                 power_manager.apply_power(player)
 
         # Dibujar los kamikazes ajustando la cámara
         for pripyat in pripyats_group:
             pripyat.draw(screen, camera_x, camera_y)
-            
+
         for asteroid in asteroids_group:
             asteroid.draw(screen, camera_x, camera_y)
 
@@ -334,14 +327,15 @@ def main():
         fps = str(int(clock.get_fps()))
         fps_text = font.render(f"{fps}", True, (255, 255, 255))  # Color blanco
         screen.blit(fps_text, (1885, 10))  # Posición del indicador de FPS
-        
+
         # Mostrar el poder actual en la parte superior izquierda
-        power_text = font.render(f"State: {power_manager.current_power}", True, (255, 255, 255))
+        power_text = font.render(
+            f"State: {power_manager.current_power}", True, (255, 255, 255))
         screen.blit(power_text, (15, 15))
 
         pygame.display.flip()
         clock.tick(60)
-        
+
         # Colisiones entre Pripyats y láseres
         collisions = pygame.sprite.groupcollide(
             pripyats_group, laser_group, False, True
@@ -352,11 +346,10 @@ def main():
                 laser_hit_sound.play()
                 if pripyat.health <= 0:
                     pripyat.kill()  # Eliminar el Pripyat si la salud llega a cero
-                    player.score += 30  # Incrementar el puntaje del jugador
+                    player.score += 20  # Incrementar el puntaje del jugador
                     next_power = power_manager.get_next_power()
-                    print(f"Nuevo poder obtenido: {next_power}")
                     power_manager.apply_power(player)
-                    
+
         collisions = pygame.sprite.groupcollide(
             asteroids_group, laser_group, False, True
         )
@@ -364,30 +357,29 @@ def main():
             for laser in lasers:
                 asteroid.kill()
                 laser_hit_sound.play()
-                player.score += 5  # Incrementar el puntaje del jugador
+                player.score += 2  # Incrementar el puntaje del jugador
 
-        
         if player.health <= 0:
-                # Detener el bucle principal y mostrar la pantalla de Game Over
-                restart_button, quit_button = show_game_over_screen(
-                    screen, font, player)
+            # Detener el bucle principal y mostrar la pantalla de Game Over
+            restart_button, quit_button = show_game_over_screen(
+                screen, font, player)
 
-                game_over = True
-                while game_over:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
+            game_over = True
+            while game_over:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                        game_over = False
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if restart_button.collidepoint(event.pos):
+                            # Reiniciar el juego
+                            main()  # Reinicia el juego llamando a la función principal
+                            game_over = False
+                            return
+                        elif quit_button.collidepoint(event.pos):
                             running = False
                             game_over = False
-                        elif event.type == pygame.MOUSEBUTTONDOWN:
-                            if restart_button.collidepoint(event.pos):
-                                # Reiniciar el juego
-                                main()  # Reinicia el juego llamando a la función principal
-                                game_over = False
-                                return
-                            elif quit_button.collidepoint(event.pos):
-                                running = False
-                                game_over = False
-        
+
     pygame.quit()
 
 
